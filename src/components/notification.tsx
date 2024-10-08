@@ -18,6 +18,8 @@ import {
 } from '../Redux/slices/notificationSlice';
 import {Calendar} from 'react-native-calendars';
 import {RadioButton} from 'react-native-paper';
+import {GestureHandlerRootView} from 'react-native-gesture-handler';
+import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 
 const ForamtDate = () => {
   const date = new Date();
@@ -41,6 +43,7 @@ const getPriorityColor = (priority: string) => {
 };
 
 const Notification: React.FC = () => {
+  //напевно треба було декілька компонентів, а не все в одному :)
   const dispatch = useDispatch<AppDispatch>();
   const {items} = useSelector((state: RootState) => state.notification);
   const [inputValue, setInputValue] = useState<string>('');
@@ -95,6 +98,30 @@ const Notification: React.FC = () => {
   const sections = groupItemsByDate(items);
 
   console.log(sections);
+
+  const renderRightActions = (id: number) => (
+    <TouchableOpacity
+      onPress={() => dispatch(removeItem({id}))}
+      style={styles.removeButton}>
+      <Text style={styles.removeText}>Delete</Text>
+    </TouchableOpacity>
+  );
+
+  const renderleftActions = item => {
+    return (
+      <TouchableOpacity
+        onPress={() => {
+          setIsEdit(true);
+          setEditItemId(item.id);
+          setInputValue(item.value);
+          setSelectedDay(item.date);
+          setChecked(item.priority);
+        }}
+        style={styles.editButton}>
+        <Text style={styles.editText}>Edit</Text>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -159,43 +186,34 @@ const Notification: React.FC = () => {
           {isEdit ? 'Update notification' : 'Add a notification'}
         </Text>
       </TouchableOpacity>
-      <SectionList
-        contentContainerStyle={styles.sectionListContainer}
-        sections={sections}
-        keyExtractor={item => item.id}
-        renderItem={({item}) => (
-          <View
-            style={[
-              styles.itemNotification,
-              {backgroundColor: getPriorityColor(item.priority)},
-            ]}>
-            <Text>{item.value}</Text>
-            <Text>{item.priority}</Text>
-            <Text style={styles.dateText}>date: {item.date}</Text>
-            <View style={styles.editRemove}>
-              <TouchableOpacity
-                onPress={() => {
-                  setIsEdit(true);
-                  setEditItemId(item.id);
-                  setInputValue(item.value);
-                  setSelectedDay(item.date);
-                  setChecked(item.priority);
-                }}
-                style={styles.removeButton}>
-                <Text>Edit</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => dispatch(removeItem({id: item.id}))}
-                style={styles.removeButton}>
-                <Text>Remove</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-        renderSectionHeader={({section: {title}}) => (
-          <Text style={styles.sectionHeaderText}>{title}</Text>
-        )}
-      />
+      <GestureHandlerRootView>
+        <SectionList
+          contentContainerStyle={styles.sectionListContainer}
+          sections={sections}
+          keyExtractor={item => item.id}
+          renderItem={({item}) => (
+            <ReanimatedSwipeable
+              renderLeftActions={() => renderleftActions(item)}
+              renderRightActions={() => renderRightActions(item.id)}
+              friction={2}
+              overshootRight={false}
+              overshootLeft={false}>
+              <View
+                style={[
+                  styles.itemNotification,
+                  {backgroundColor: getPriorityColor(item.priority)},
+                ]}>
+                <Text>{item.value}</Text>
+                <Text>{item.priority}</Text>
+                <Text style={styles.dateText}>date: {item.date}</Text>
+              </View>
+            </ReanimatedSwipeable>
+          )}
+          renderSectionHeader={({section: {title}}) => (
+            <Text style={styles.sectionHeaderText}>{title}</Text>
+          )}
+        />
+      </GestureHandlerRootView>
     </View>
   );
 };
@@ -262,9 +280,19 @@ const styles = StyleSheet.create({
     color: 'red',
   },
   removeButton: {
-    alignSelf: 'flex-end',
+    marginTop: 10,
+    width: '40%',
+    alignItems: 'center',
+    justifyContent: 'center',
     height: 80,
-    marginLeft: 10,
+    backgroundColor: 'red',
+    borderRadius: 10,
+    padding: 10,
+  },
+  removeText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: 'white',
   },
   dateText: {
     fontSize: 12,
@@ -276,8 +304,19 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
   },
-  editRemove: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
+  editButton: {
+    marginTop: 10,
+    width: '40%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 80,
+    backgroundColor: 'orange',
+    borderRadius: 10,
+    padding: 10,
+  },
+  editText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: 'white',
   },
 });
